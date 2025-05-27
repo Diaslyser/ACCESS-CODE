@@ -1,0 +1,35 @@
+<!-- templates/audio_player.html -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <title>Transmission</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='static/style.css') }}">
+</head>
+<body>
+  <h1>🎧 Transmission de TENSIA</h1>
+
+  <audio id="exclusiveAudio" controls autoplay>
+    <source src="{{ url_for('serve_audio', token=token) }}" type="audio/mpeg">
+  </audio>
+
+  <script>
+    const audio = document.getElementById('exclusiveAudio');
+
+    audio.addEventListener('ended', () => {
+      audio.remove();
+      const msg = document.createElement('p');
+      msg.innerText = "Lecture terminée. Ce titre n’est plus accessible.";
+      msg.style.color = 'red';
+      msg.style.fontWeight = 'bold';
+      document.body.appendChild(msg);
+    });
+
+    audio.addEventListener('play', () => {
+      if (audio.ended) {
+        audio.pause();
+      }
+    });
+  </script>
+</body>
+</html>

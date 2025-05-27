@@ -1,0 +1,14 @@
+ACCESS.CODE/                  # Application Flask
+   app.py                      # Fichier principal de l'application
+   static/
+      audio/              # Fichier audio pour le son de succès
+         TENSIA.mp3
+   templates/                   # Dossier pour les templates HTML
+      static/                    # Dossier pour les fichiers statiques
+         style.css              # Fichier CSS pour le style
+      index.html                # Page d'accueil
+      tensia.html               # Page de jeu
+      interface.html            # Page d'interface
+   data/                        # Dossier pour les fichiers de données
+      codes.json                # Fichier JSON pour les codes
+      generate_code.py           # Script pour générer des codes

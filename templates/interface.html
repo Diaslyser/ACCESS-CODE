@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>TENSIA // Audio Access Granted</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700&display=swap" rel="stylesheet" />
+  <style>
+    html, body {
+      margin: 0; padding: 0; overflow: hidden;
+      font-family: 'Orbitron', sans-serif;
+      background: #000;
+      color: #00fff2;
+      user-select: none;
+    }
+    canvas {
+      position: fixed;
+      top: 0; left: 0;
+      z-index: 0;
+      background: transparent;
+    }
+    .container {
+      position: relative; z-index: 2;
+      height: 100vh;
+      display: flex; justify-content: center; align-items: center;
+      flex-direction: column;
+      text-align: center;
+      backdrop-filter: blur(5px);
+      background: rgba(0, 0, 0, 0.6);
+      animation: fadeInZoom 2.5s ease-out;
+      padding: 2rem;
+      box-sizing: border-box;
+    }
+    @keyframes fadeInZoom {
+      from { opacity: 0; transform: scale(1.08); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    h1 {
+      font-size: 2rem;
+      color: #00fff2;
+      text-shadow: 0 0 10px #00fff2;
+      margin-bottom: 2rem;
+    }
+    .audio-player {
+      position: relative;
+      padding: 20px 30px;
+      border: 2.5px solid #00fff2;
+      border-radius: 20px;
+      box-shadow: 0 0 40px #00fff2;
+      background-color: rgba(0, 0, 0, 0.75);
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      max-width: 400px;
+      margin: 0 auto;
+      user-select: none;
+    }
+    audio { display: none; }
+
+    button#playPause {
+      background: none;
+      border: 2px solid #00fff2;
+      border-radius: 50%;
+      width: 56px;
+      height: 56px;
+      color: #00fff2;
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      position: relative;
+      transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease;
+      box-shadow: 0 0 10px #00fff2;
+    }
+    button#playPause:hover {
+      background-color: #00fff2;
+      color: #000;
+      box-shadow: 0 0 20px #00fff2;
+    }
+    button#playPause.playing::before {
+      content: '';
+      position: absolute;
+      top: -8px; left: -8px; right: -8px; bottom: -8px;
+      border-radius: 50%;
+      box-shadow: 0 0 15px 5px #00fff2;
+      animation: pulseHalo 2s infinite ease-in-out;
+      pointer-events: none;
+      opacity: 0.7;
+      z-index: -1;
+    }
+    @keyframes pulseHalo {
+      0%, 100% { transform: scale(1); opacity: 0.7; }
+      50% { transform: scale(1.15); opacity: 0.35; }
+    }
+    svg {
+      fill: currentColor;
+      width: 26px;
+      height: 26px;
+      pointer-events: none;
+    }
+    .status {
+      margin-top: 1rem;
+      font-size: 0.85rem;
+      color: #ccc;
+      text-shadow: 0 0 5px #00fff2;
+      user-select: none;
+    }
+    .glitch {
+      font-size: 0.9rem;
+      letter-spacing: 2px;
+      color: #00fff2;
+      text-shadow: 0 0 6px #00fff2;
+      animation: flicker 3s infinite;
+      user-select: none;
+    }
+    @keyframes flicker {
+      0%, 100% { opacity: 1; }
+      45% { opacity: 0.7; }
+      50% { opacity: 0.4; }
+      55% { opacity: 0.7; }
+      60% { opacity: 1; }
+    }
+    .overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.95);
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  color: #00fff2;
+  font-family: 'Orbitron', sans-serif;
+  animation: fadeInZoom 2s ease-out;
+}
+
+.overlay-content {
+  text-align: center;
+}
+
+.glitch-text {
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  animation: flicker 2.5s infinite;
+}
+
+.glitch-sub {
+  font-size: 0.8rem;
+  opacity: 0.7;
+  margin-top: 1rem;
+}
+
+.progress-bar {
+  width: 300px;
+  height: 10px;
+  background: #111;
+  border: 1px solid #00fff2;
+  border-radius: 5px;
+  overflow: hidden;
+  box-shadow: 0 0 10px #00fff2;
+  margin: 1rem auto;
+  position: relative;
+}
+
+.progress {
+  height: 100%;
+  background: #00fff2;
+  width: 0%;
+  animation: loadBar 4.8s linear forwards;
+}
+
+@keyframes loadBar {
+  to { width: 100%; }
+}
+  </style>
+</head>
+<body>
+  <div id="overlay-block" class="overlay">
+  <div class="overlay-content">
+    <div class="glitch-text">[ ACCESSING MEMORY NODE TENSIA ]</div>
+    <div class="progress-bar">
+      <div class="progress"></div>
+    </div>
+    <div class="glitch-sub">DECRYPTION IN PROGRESS...</div>
+  </div>
+</div>
+  <canvas id="bg"></canvas>
+  <div class="container">
+    <h1>NOW DECRYPTING: <span class="glitch">TENSIA</span></h1>
+    <div class="audio-player">
+      <button id="playPause" aria-label="Play/Pause audio" class="playing">
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="6" y="4" width="4" height="16" />
+          <rect x="14" y="4" width="4" height="16" />
+        </svg>
+      </button>
+      <audio id="audio" preload="auto" controlslist="nodownload noremoteplayback" disableRemotePlayback>
+        <source src="{{ url_for('static', filename='audio/TENSIA.mp3') }}" type="audio/mpeg" />
+        Your browser does not support the audio element.
+      </audio>
+    </div>
+    <div class="status">[ Playback initiated. Transmission secured. ]</div>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/three@0.158.0/build/three.min.js"></script>
+  <script>
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('bg'), antialias:true, alpha:true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+
+    // Ring mesh
+    const geometry = new THREE.TorusGeometry(10, 3, 16, 100);
+    const material = new THREE.LineBasicMaterial({
+      color: 0x00fff2,
+      linewidth: 13
+    });
+    const ring = new THREE.Line(geometry, material);
+    scene.add(ring);
+
+    ring.rotation.x = 1;
+    ring.rotation.y = 1;
+    camera.position.z = 30;
+
+    const audio = document.getElementById('audio');
+    const playPauseBtn = document.getElementById('playPause');
+
+    // Création des sphères latérales animées
+    const sideGeometry = new THREE.SphereGeometry(1, 16, 16);
+    const sideMaterial = new THREE.MeshBasicMaterial({ color: 0x00fff2, transparent: true, opacity: 0.7 });
+
+    const leftSphere = new THREE.Mesh(sideGeometry, sideMaterial);
+    const rightSphere = new THREE.Mesh(sideGeometry, sideMaterial);
+
+    leftSphere.position.set(-18, 0, 0);
+    rightSphere.position.set(18, 0, 0);
+
+    scene.add(leftSphere);
+    scene.add(rightSphere);
+
+
+    // Audio context et analyseur
+    const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const source = audioCtx.createMediaElementSource(audio);
+    const analyser = audioCtx.createAnalyser();
+    analyser.fftSize = 256;
+    source.connect(analyser);
+    analyser.connect(audioCtx.destination);
+
+    const dataArray = new Uint8Array(analyser.frequencyBinCount);
+
+    // Changer icône SVG (play/pause)
+    function setIconPlaying(isPlaying) {
+      playPauseBtn.classList.toggle('playing', isPlaying);
+      playPauseBtn.innerHTML = isPlaying ? 
+        `<svg viewBox="0 0 24 24" aria-hidden="true">
+          <rect x="6" y="4" width="4" height="16" />
+          <rect x="14" y="4" width="4" height="16" />
+        </svg>` : 
+        `<svg viewBox="0 0 24 24" aria-hidden="true">
+          <polygon points="8,5 19,12 8,19" />
+        </svg>`;
+    }
+
+    function togglePlayPause() {
+      if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+      }
+      if (audio.paused) {
+        audio.play();
+        setIconPlaying(true);
+      } else {
+        audio.pause();
+        setIconPlaying(false);
+      }
+    }
+
+    playPauseBtn.addEventListener('click', togglePlayPause);
+
+    window.addEventListener('load', () => {
+      audio.play().then(() => setIconPlaying(true))
+        .catch(() => setIconPlaying(false));
+    });
+
+    // Variables animation
+    let baseRotationSpeed = 0.002;
+    let pulseScale = 1;
+    let lastTimestamp = 0;
+
+    function animate(timestamp) {
+      requestAnimationFrame(animate);
+
+      analyser.getByteFrequencyData(dataArray);
+
+      // Calculer volume moyen dans les fréquences basses (par ex. 0-10)
+      let bassSum = 0;
+      for (let i = 0; i < 10; i++) {
+        bassSum += dataArray[i];
+      }
+      const bassAvg = bassSum / 10 / 255; // normalisé [0..1]
+
+      // Rotation liée au volume
+      ring.rotation.x += baseRotationSpeed * 0.5 + bassAvg * 0.02;
+      ring.rotation.y += baseRotationSpeed * 0.8 + bassAvg * 0.03;
+      ring.rotation.z += baseRotationSpeed + bassAvg * 0.04;
+
+      // Pulsation du ring liée au volume (effet battement)
+      pulseScale = 1 + bassAvg * 0.15;
+      ring.scale.set(pulseScale, pulseScale, pulseScale);
+
+      // Oscillation verticale et d'échelle selon le volume
+      const sidePulse = 1 + bassAvg * 0.3;
+      const sideYPos = Math.sin(timestamp * 0.005) * 2 + bassAvg * 4; // oscillation verticale fluide
+
+      leftSphere.position.y = sideYPos;
+      rightSphere.position.y = sideYPos;
+
+      leftSphere.scale.set(sidePulse, sidePulse, sidePulse);
+      rightSphere.scale.set(sidePulse, sidePulse, sidePulse);
+
+      // Oscillation horizontale lente (effet de balancement)
+      leftSphere.position.x = -18 + Math.sin(timestamp * 0.002) * 1.5;
+      rightSphere.position.x = 18 + Math.cos(timestamp * 0.002) * 1.5;
+
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth/window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
+  <audio id="player" controls>
+  <source src="{{ url_for('serve_audio', token=token) }}" type="audio/mp3">
+</audio>
+  <div class="glitch">[ TENSIA STREAMING ]</div>
+  <div class="glitch-sub">[ ACCESS GRANTED ]</div>
+  <div class="status">[ Transmission en cours... ]</div>
+<script>
+  // Use already declared 'audio' and 'playPauseBtn' from previous script
+  const hasPlayed = localStorage.getItem('audio_played');
+
+  if (hasPlayed === 'true') {
+    playPauseBtn.disabled = true;
+    playPauseBtn.style.opacity = 0.3;
+    playPauseBtn.style.pointerEvents = 'none';
+  }
+
+  playPauseBtn.addEventListener('click', () => {
+    if (hasPlayed === 'true') {
+      alert("Transmission terminée.");
+      return;
+    }
+
+    if (audio.paused) {
+      audio.play();
+    } else {
+      audio.pause();
+    }
+  });
+
+  audio.addEventListener('ended', () => {
+    localStorage.setItem('audio_played', 'true');
+    playPauseBtn.disabled = true;
+    playPauseBtn.style.opacity = 0.3;
+    playPauseBtn.style.pointerEvents = 'none';
+  });
+
+  const player = document.getElementById('player');
+
+  player.onended = () => {
+      player.removeAttribute("src");
+      player.load();
+      alert("Transmission terminée. Ce titre n’est plus accessible.");
+      player.style.display = 'none';
+  };
+  // Blocage narratif avant lecture
+  const overlay = document.getElementById('overlay-block');
+
+  setTimeout(() => {
+    overlay.style.display = 'none';
+    playPauseBtn.disabled = false;
+  }, 4800);
+</script>
+</body>
+</html>
